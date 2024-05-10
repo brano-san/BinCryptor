@@ -9,39 +9,31 @@
 namespace crypt
 {
 	class File;
-	class Cryptor;
 	class MaskedFileManager;
 
-	class Cryptor
-	{
-	public:
-		Cryptor() = default;
+	void cryptFile(File* file,
+		const std::array<std::byte, 8>& keyBytes,
+		const std::string& outputPath);
 
-		void cryptFile(File* file,
-					   const std::array<std::byte, 8>& keyBytes);
-
-		void cryptFile(MaskedFileManager* files,
-					   const std::array<std::byte, 8>& keyBytes);
-
-	private:
-
-	};
+	void cryptFile(MaskedFileManager* files,
+		const std::array<std::byte, 8>& keyBytes,
+		const std::string& outputPath);
 
 	class File
 	{
 	public:
 		File() = default;
 		File(const std::string& path,
-			 std::ios_base::openmode mode = std::ios::in | std::ios::out);
+			std::ios_base::openmode mode = std::ios::in | std::ios::out);
 
 	public:
 		std::string getPath();
 		std::string getFileName();
 
 		void open(const std::string& path,
-				  std::ios_base::openmode mode = std::ios::in | std::ios::out);
+			std::ios_base::openmode mode = std::ios::in | std::ios::out);
 		void close();
-		
+
 		std::string read();
 		void write(const std::string& str);
 
@@ -53,24 +45,22 @@ namespace crypt
 	class MaskedFileManager
 	{
 	public:
-		MaskedFileManager();
-		explicit MaskedFileManager(std::string fileMask);
+		MaskedFileManager() = default;
+		explicit MaskedFileManager(const std::string& path,
+								   const std::string& mask);
 
-		~MaskedFileManager();
+		~MaskedFileManager() = default;
 
-		void setDeleteRequired(bool flag);
-
-		void setMask(const std::string& fileMask);
-
-		std::string getFileNameAt(int index) const;
+	public:
+		void findFilesByMask(const std::string& path,
+							 const std::string& mask);
 
 	private:
-		friend void Cryptor::cryptFile(MaskedFileManager* files, const std::array<std::byte, 8>& keyBytes);
+		friend void cryptFile(MaskedFileManager* files,
+							  const std::array<std::byte, 8>& keyBytes,
+							  const std::string& outputPath);
 
-		std::string _fileMask;
-
-		bool _isDeleteRequired = false;
-
+	private:
 		std::vector<File> _files;
 	};
 }

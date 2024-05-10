@@ -11,15 +11,14 @@ constexpr std::byte operator""_B(unsigned long long ch)
 
 int main()
 {
+	crypt::MaskedFileManager files("G://", "*.bin");
+
 	constexpr std::array keyBytes{
 		0xFF_B, 0xFF_B, 0xFF_B, 0xFF_B,
 		0xFF_B, 0xFF_B, 0xFF_B, 0xFF_B
 	};
 
-	crypt::File file("G://file.bin", std::ios::binary | std::ios::in);
-
-	crypt::Cryptor cryptor;
-	cryptor.cryptFile(&file, keyBytes);
+	crypt::cryptFile(&files, keyBytes, "G://result.txt");
 
 	return 0;
 }

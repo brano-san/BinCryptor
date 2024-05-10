@@ -1,5 +1,6 @@
 ﻿#include "BinCryptor.h"
 #include <iostream>
+#include <Windows.h>
 
 // File class
 crypt::File::File(const std::string& path, std::ios_base::openmode mode)
@@ -51,18 +52,8 @@ void crypt::File::write(const std::string& str)
 	_file.write(str.c_str(), str.size());
 }
 
-// MaskedFileManager class
-void crypt::MaskedFileManager::setDeleteRequired(const bool flag)
-{
-	_isDeleteRequired = flag;
-}
-
-void crypt::MaskedFileManager::setMask(const std::string& fileMask)
-{
-	_fileMask = fileMask;
-}
-
-void crypt::Cryptor::cryptFile(File* file, const std::array<std::byte, 8>& keyBytes)
+// Cryptor class
+void crypt::cryptFile(File* file, const std::array<std::byte, 8>& keyBytes, const std::string& outputPath)
 {
 	auto data = file->read();
 
@@ -75,15 +66,44 @@ void crypt::Cryptor::cryptFile(File* file, const std::array<std::byte, 8>& keyBy
 
 		result[i] = static_cast<unsigned char>(res);
 	}
-	
-	File resultFile("G://result.txt", std::ios::out);
+
+	File resultFile(outputPath, std::ios::out);
 	resultFile.write(result);
 }
 
-void crypt::Cryptor::cryptFile(MaskedFileManager* files, const std::array<std::byte, 8>& keyBytes)
+void crypt::cryptFile(MaskedFileManager* files, const std::array<std::byte, 8>& keyBytes, const std::string& outputPath)
 {
 	for (auto& file : files->_files)
 	{
-		cryptFile(&file, keyBytes);
+		cryptFile(&file, keyBytes, outputPath);
+	}
+}
+
+// MaskedFileManager class
+crypt::MaskedFileManager::MaskedFileManager(const std::string& path, const std::string& mask)
+{
+	findFilesByMask(path, mask);
+}
+
+void crypt::MaskedFileManager::findFilesByMask(const std::string& path, const std::string& mask)
+{
+	WIN32_FIND_DATA fileData{};
+
+	std::string maskedPath = path + mask;
+
+	HANDLE hFind = FindFirstFile(maskedPath.c_str(), &fileData);
+
+	if (hFind == INVALID_HANDLE_VALUE)
+	{
+		return;
+	}
+	else
+	{
+		do
+		{
+			_files.emplace_back(path + fileData.cFileName, std::ios::binary | std::ios::in);
+		} while (FindNextFile(hFind, &fileData));
+
+		FindClose(hFind);
 	}
 }
