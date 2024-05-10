@@ -34,3 +34,30 @@ TEST(FileTest, OpenFuncFilePath) {
 
 	ASSERT_STREQ(file.getPath().c_str(), filePath.c_str());
 }
+
+TEST(FileTest, ReadData) {
+	std::string sourceFilePath = "G://file.txt";
+	crypt::File sourceFile(sourceFilePath, std::ios::in);
+
+	std::string result = "123456";
+
+	ASSERT_STREQ(sourceFile.read().c_str(), result.c_str());
+}
+
+TEST(FileTest, WriteData) {
+	std::string inputFilePath = "G://WriteTest.txt";
+	crypt::File inputFile(inputFilePath, std::ios::out);
+	
+	std::string data = "123456";
+	inputFile.write(data);
+
+	inputFile.close();
+
+	crypt::File outputFile(inputFilePath, std::ios::in);
+
+	std::string result = outputFile.read();
+
+	outputFile.close();
+
+	ASSERT_STREQ(data.c_str(), result.c_str());
+}

@@ -8,16 +8,20 @@
 
 namespace crypt
 {
+	class File;
+	class Cryptor;
 	class MaskedFileManager;
 
 	class Cryptor
 	{
 	public:
-		Cryptor();
+		Cryptor() = default;
 
-		~Cryptor();
+		void cryptFile(File* file,
+					   const std::array<std::byte, 8>& keyBytes);
 
-		void cryptFiles(MaskedFileManager* files, const std::array<std::byte, 8>& keyBytes);
+		void cryptFile(MaskedFileManager* files,
+					   const std::array<std::byte, 8>& keyBytes);
 
 	private:
 
@@ -27,15 +31,18 @@ namespace crypt
 	{
 	public:
 		File() = default;
-		explicit File(const std::string& path);
+		File(const std::string& path,
+			 std::ios_base::openmode mode = std::ios::in | std::ios::out);
 
 	public:
 		std::string getPath();
 		std::string getFileName();
 
+		void open(const std::string& path,
+				  std::ios_base::openmode mode = std::ios::in | std::ios::out);
 		void close();
+		
 		std::string read();
-		void open(const std::string& path);
 		void write(const std::string& str);
 
 	private:
@@ -58,7 +65,7 @@ namespace crypt
 		std::string getFileNameAt(int index) const;
 
 	private:
-		friend void Cryptor::cryptFiles(MaskedFileManager* files, const std::array<std::byte, 8>& keyBytes);
+		friend void Cryptor::cryptFile(MaskedFileManager* files, const std::array<std::byte, 8>& keyBytes);
 
 		std::string _fileMask;
 
