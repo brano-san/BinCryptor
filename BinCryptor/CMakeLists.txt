@@ -1,4 +1,6 @@
-﻿add_executable (BinCryptor "main.cpp")
+﻿add_executable (BinCryptor "BinCryptor.cpp" "BinCryptor.h" "main.cpp")
+
+add_library (BinCryptor_lib STATIC "BinCryptor.cpp" "BinCryptor.h" "main.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET BinCryptor PROPERTY CXX_STANDARD 20)
