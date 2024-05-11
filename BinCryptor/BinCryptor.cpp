@@ -52,7 +52,7 @@ void crypt::File::write(const std::string& str)
 	_file.write(str.c_str(), str.size());
 }
 
-// Cryptor class
+// Crypt functions
 void crypt::cryptFile(File* file, const std::array<std::byte, 8>& keyBytes, const std::string& outputPath)
 {
 	auto data = file->read();
@@ -67,7 +67,8 @@ void crypt::cryptFile(File* file, const std::array<std::byte, 8>& keyBytes, cons
 		result[i] = static_cast<unsigned char>(res);
 	}
 
-	File resultFile(outputPath, std::ios::out);
+	std::string resultPath = outputPath + "Crypted" + file->getFileName();
+	File resultFile(resultPath, std::ios::out);
 	resultFile.write(result);
 }
 
