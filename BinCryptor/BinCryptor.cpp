@@ -1,6 +1,7 @@
 ﻿#include "BinCryptor.h"
 #include <iostream>
 #include <Windows.h>
+#include <cstddef>
 
 // File class
 crypt::File::File(const std::string& path, std::ios_base::openmode mode)
@@ -22,7 +23,7 @@ void crypt::File::open(const std::string& path, std::ios_base::openmode mode)
 {
 	if (_file.is_open())
 		_file.close();
-	
+
 	_path = path;
 
 	_file.open(_path, mode);
@@ -37,7 +38,7 @@ std::string crypt::File::read()
 {
 	if (!_file.is_open())
 		return std::string();
-		
+
 	std::string data;
 	std::string line;
 	while (std::getline(_file, line)) {
@@ -52,8 +53,14 @@ void crypt::File::write(const std::string& str)
 	_file.write(str.c_str(), str.size());
 }
 
+crypt::Cryptor::Cryptor(FileSavingStrategy* strategy)
+	: _saver(FileSaver(strategy))
+{	}
+
 // Crypt functions
-void crypt::cryptFile(File* file, const std::array<std::byte, 8>& keyBytes, const std::string& outputPath)
+void crypt::Cryptor::cryptFile(File* file,
+	const std::array<std::byte, 8>& keyBytes,
+	const std::string& outputPath)
 {
 	auto data = file->read();
 
@@ -64,15 +71,15 @@ void crypt::cryptFile(File* file, const std::array<std::byte, 8>& keyBytes, cons
 	{
 		auto res = static_cast<std::byte>(data[i]) ^ keyBytes[i % 8];
 
-		result[i] = static_cast<unsigned char>(res);
+		result[i] = static_cast<char>(res);
 	}
 
-	std::string resultPath = outputPath + "Crypted" + file->getFileName();
-	File resultFile(resultPath, std::ios::out);
-	resultFile.write(result);
+	_saver.saveToFile(outputPath + file->getFileName(), result);
 }
 
-void crypt::cryptFile(MaskedFileManager* files, const std::array<std::byte, 8>& keyBytes, const std::string& outputPath)
+void crypt::Cryptor::cryptFile(MaskedFileManager* files,
+	const std::array<std::byte, 8>& keyBytes,
+	const std::string& outputPath)
 {
 	for (auto& file : files->_files)
 	{
@@ -86,13 +93,31 @@ crypt::MaskedFileManager::MaskedFileManager(const std::string& path, const std::
 	findFilesByMask(path, mask);
 }
 
+void crypt::MaskedFileManager::closeFiles()
+{
+	for (auto& file : _files)
+	{
+		file.close();
+	}
+}
+
+void crypt::MaskedFileManager::deleteFiles()
+{
+	for (auto& file : _files)
+	{
+		file.close();
+		std::remove(file.getPath().c_str());
+	}
+	_files.clear();
+}
+
 void crypt::MaskedFileManager::findFilesByMask(const std::string& path, const std::string& mask)
 {
 	WIN32_FIND_DATA fileData{};
 
-	std::string maskedPath = path + mask;
+	std::string fullPath = path + mask;
 
-	HANDLE hFind = FindFirstFile(maskedPath.c_str(), &fileData);
+	HANDLE hFind = FindFirstFile(fullPath.c_str(), &fileData);
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
@@ -100,6 +125,9 @@ void crypt::MaskedFileManager::findFilesByMask(const std::string& path, const st
 	}
 	else
 	{
+		closeFiles();
+		_files.clear();
+
 		do
 		{
 			_files.emplace_back(path + fileData.cFileName, std::ios::binary | std::ios::in);
@@ -107,4 +135,51 @@ void crypt::MaskedFileManager::findFilesByMask(const std::string& path, const st
 
 		FindClose(hFind);
 	}
+}
+
+// Save strategy
+crypt::FileSaver::FileSaver(FileSavingStrategy* strategy)
+	: _strategy(strategy) 
+{	}
+
+void crypt::FileSaver::saveToFile(std::filesystem::path path,
+	const std::string& data) const
+{
+	_strategy->saveToFile(path, data);
+}
+
+void crypt::OverwritingSavingStrategy::saveToFile(std::filesystem::path path, const std::string& data)
+{
+	std::string outputPath = path.parent_path().string() +
+		"/" + path.filename().string();
+
+	File resultFile(outputPath, std::ios::out | std::ios::binary);
+	resultFile.write(data);
+}
+
+void crypt::NewNameSavingStrategy::saveToFile(std::filesystem::path path, const std::string& data)
+{
+	unsigned int count = 1;
+	std::string newFilePath = path.string();
+
+	while (std::filesystem::exists(newFilePath))
+	{
+		newFilePath = path.parent_path().string() + "/" +
+			path.stem().string() + " (" +
+			std::to_string(count) + ")" +
+			path.extension().string();
+		++count;
+	}
+	
+	File resultFile(newFilePath, std::ios::out | std::ios::binary);
+	resultFile.write(data);
+}
+
+void crypt::WritingToEndSavingStrategy::saveToFile(std::filesystem::path path, const std::string& data)
+{
+	std::string outputPath = path.parent_path().string() +
+		"/" + path.filename().string();
+
+	File resultFile(outputPath, std::ios::out | std::ios::app);
+	resultFile.write(data);
 }
