@@ -1,11 +1,11 @@
 ﻿#pragma once
 
-#include <fstream>
-#include <functional>
 #include <filesystem>
-#include <array>
-#include <vector>
+#include <functional>
 #include <Windows.h>
+#include <fstream>
+#include <vector>
+#include <array>
 
 namespace crypt
 {
@@ -60,7 +60,11 @@ namespace crypt
 
 	class FileSaver {
 	public:
+		FileSaver() = default;
 		FileSaver(FileSavingStrategy* strategy);
+
+	public:
+		void setStrategy(FileSavingStrategy* strategy);
 
 		void saveToFile(std::filesystem::path path, const std::string& data) const;
 
@@ -71,9 +75,12 @@ namespace crypt
 	class Cryptor
 	{
 	public:
+		Cryptor() = default;
 		Cryptor(FileSavingStrategy* strategy);
 
 	public:
+		void setFileSaverStrategy(FileSavingStrategy* strategy);
+
 		void cryptFile(File* file,
 			const std::array<std::byte, 8>& keyBytes,
 			const std::string& outputPath);
@@ -96,6 +103,8 @@ namespace crypt
 		~MaskedFileManager() = default;
 
 	public:
+		size_t getFileCount() const;
+
 		void closeFiles();
 		void deleteFiles();
 

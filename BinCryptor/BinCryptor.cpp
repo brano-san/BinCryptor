@@ -1,6 +1,6 @@
 ﻿#include "BinCryptor.h"
-#include <iostream>
 #include <Windows.h>
+#include <iostream>
 #include <cstddef>
 
 // File class
@@ -53,11 +53,16 @@ void crypt::File::write(const std::string& str)
 	_file.write(str.c_str(), str.size());
 }
 
+// Cryptor class
 crypt::Cryptor::Cryptor(FileSavingStrategy* strategy)
 	: _saver(FileSaver(strategy))
 {	}
 
-// Crypt functions
+void crypt::Cryptor::setFileSaverStrategy(FileSavingStrategy* strategy)
+{
+	_saver.setStrategy(strategy);
+}
+
 void crypt::Cryptor::cryptFile(File* file,
 	const std::array<std::byte, 8>& keyBytes,
 	const std::string& outputPath)
@@ -91,6 +96,11 @@ void crypt::Cryptor::cryptFile(MaskedFileManager* files,
 crypt::MaskedFileManager::MaskedFileManager(const std::string& path, const std::string& mask)
 {
 	findFilesByMask(path, mask);
+}
+
+size_t crypt::MaskedFileManager::getFileCount() const
+{
+	return _files.size();
 }
 
 void crypt::MaskedFileManager::closeFiles()
@@ -141,6 +151,11 @@ void crypt::MaskedFileManager::findFilesByMask(const std::string& path, const st
 crypt::FileSaver::FileSaver(FileSavingStrategy* strategy)
 	: _strategy(strategy) 
 {	}
+
+void crypt::FileSaver::setStrategy(FileSavingStrategy* strategy)
+{
+	_strategy = strategy;
+}
 
 void crypt::FileSaver::saveToFile(std::filesystem::path path,
 	const std::string& data) const
